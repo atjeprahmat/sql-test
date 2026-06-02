@@ -309,6 +309,73 @@
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
         }
 
+        .section-title {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+            color: #1e3a8a;
+        }
+
+        .blueprint-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+            margin: 18px 0 30px;
+        }
+
+        .blueprint-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 24px;
+        }
+
+        .blueprint-card h4 {
+            margin: 0 0 16px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .blueprint-card.employees h4 {
+            color: #0f766e;
+        }
+
+        .blueprint-card p,
+        .tutorial-block p {
+            color: #334155;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .blueprint-card ul {
+            margin: 10px 0 0;
+            padding-left: 20px;
+            color: #334155;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .tutorial-block {
+            margin-top: 24px;
+        }
+
+        .tutorial-block h4 {
+            margin: 0 0 12px;
+            font-size: 19px;
+            color: #0f172a;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 16px 18px;
+            overflow-x: auto;
+            font: 14px/1.45 'Courier New', Courier, monospace;
+            white-space: pre;
+            margin: 12px 0 0;
+        }
+
         #kisi-container > div[style*="background: #e8f0fe"] {
             background: #eff6ff !important;
             border-left-color: var(--primary-color) !important;
@@ -395,6 +462,10 @@
             .btn-nav-container button {
                 flex: 1 1 100%;
             }
+
+            .blueprint-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -421,41 +492,61 @@
 
 <div class="container">
     <div id="kisi-container" class="card">
-        <h2>Kisi-Kisi Struktur Skema & Panduan Materi Ujian</h2>
-        <p style="color: #5f6368; font-size: 14px;">Silakan pelajari dengan cermat arsitektur relasi tabel serta distribusi indikator kompetensi SQL di bawah ini sebelum melanjutkan ke menu ujian:</p>
-        
-        <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary-color); margin-bottom: 25px;">
-            <h4 style="margin: 0 0 8px 0; color: var(--primary-color);">Komposisi & Distribusi Soal Ujian</h4>
-            <ul class="info-list" style="margin: 0;">
-                <li><b>Soal 1 (Level Mudah):</b> Penyaringan data baris tunggal menggunakan klausa <code>SELECT ... FROM ... WHERE</code>.</li>
-                <li><b>Soal 2 (Level Mudah):</b> Fungsi Agregasi dasar untuk pengolahan angka statistik matematika (<code>SUM</code> atau <code>MAX</code>).</li>
-                <li><b>Soal 3 (Level Mudah):</b> Perintah Data Manipulation Language (DML) dasar untuk modifikasi record data (<code>INSERT INTO</code> atau <code>UPDATE</code>).</li>
-                <li><b>Soal 4 (Level Sedang):</b> Teknik relasi penggabungan dua tabel yang saling berhubungan menggunakan perintah <code>INNER JOIN ... ON ...</code>.</li>
-                <li><b>Soal 5 (Level Sedang):</b> Pengelompokan metrik data berjenjang yang mengombinasikan klausa <code>GROUP BY</code> dengan fungsi agregat (<code>COUNT</code> atau <code>AVG</code>).</li>
-            </ul>
+        <h2 class="section-title">1. Kisi-Kisi Skema Database (ERD Blueprint)</h2>
+        <p style="color: #334155; font-size: 14px;">Sistem akan mengacak secara otomatis salah satu dari dua tema basis data berikut untuk Anda penuhi:</p>
+
+        <div class="blueprint-grid">
+            <div class="blueprint-card">
+                <h4>Tema A: PHI Minimart (Retail)</h4>
+                <p>Berfokus pada transaksi penjualan supermarket. Pahami relasi kolom kunci berikut:</p>
+                <ul>
+                    <li><code>ms_produk</code> ke <code>ms_kategori</code> via <code>kode_kategori</code></li>
+                    <li><code>tr_penjualan</code> ke <code>ms_produk</code> via <code>kode_produk</code></li>
+                    <li><code>tr_penjualan</code> ke <code>ms_cabang</code> via <code>kode_cabang</code></li>
+                    <li><code>ms_cabang</code> ke <code>ms_kota</code> ke <code>ms_propinsi</code></li>
+                    <li><code>ms_harga_harian</code> mencatat histori <code>harga_berlaku</code> produk</li>
+                </ul>
+            </div>
+
+            <div class="blueprint-card employees">
+                <h4>Tema B: Employees (Corporate)</h4>
+                <p>Berfokus pada manajemen SDM perusahaan skala besar. Pahami tata letak relasi ini:</p>
+                <ul>
+                    <li><code>dept_emp</code> menjembatani <code>employees</code> dan <code>departments</code> via <code>emp_no</code> &amp; <code>dept_no</code></li>
+                    <li><code>dept_manager</code> mencatat manajer divisi via <code>emp_no</code></li>
+                    <li><code>salaries</code> histori pendapatan karyawan via <code>emp_no</code></li>
+                    <li><code>titles</code> riwayat jabatan struktural via <code>emp_no</code></li>
+                </ul>
+            </div>
         </div>
 
-        <h3 style="border-bottom: 2px solid #f1f3f4; padding-bottom: 5px; margin-top: 25px;">Visualisasi Diagram Arsitektur Database Relasional:</h3>
-        <div class="grid-kisi">
-            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa;">
-                <h4 style="margin: 0 0 5px 0; color: #1a73e8;">Tema A: PHI Minimart (Sistem Transaksi Penjualan)</h4>
-                <p style="font-size: 13px; margin: 0 0 12px 0; color:#666;">
-                    Skema ini fokus pada pengelolaan data retail penjualan barang dagang.
-                </p>
-                <div class="erd-box">
-                    <img id="img-kisi-phi" src="" alt="Skema ERD PHI Minimart">
-                </div>
-            </div>
+        <h2 class="section-title">2. Tutorial Penyegaran Sintaks SQL</h2>
 
-            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa;">
-                <h4 style="margin: 0 0 5px 0; color: #1a73e8;">Tema B: Employees Corporate (Sistem Data SDM / HRD)</h4>
-                <p style="font-size: 13px; margin: 0 0 12px 0; color:#666;">
-                    Skema ini fokus pada struktur relasional data ketenagakerjaan di internal perusahaan.
-                </p>
-                <div class="erd-box">
-                    <img id="img-kisi-emp" src="" alt="Skema ERD Employees Corporate">
-                </div>
-            </div>
+        <div class="tutorial-block">
+            <h4>A. Operasi Manipulasi Data (DML)</h4>
+            <p>Gunakan <code>INSERT</code> untuk menambah data, dan <code>UPDATE</code> dikombinasikan dengan klausa <code>WHERE</code> agar tidak merubah seluruh isi tabel.</p>
+            <pre class="code-block">-- Contoh Tambah Data
+INSERT INTO nama_tabel (kolom1, kolom2) VALUES ('Nilai1', 'Nilai2');
+
+-- Contoh Mengubah Data Spesifik
+UPDATE salaries SET salary = salary * 1.1 WHERE emp_no = 10001;</pre>
+        </div>
+
+        <div class="tutorial-block">
+            <h4>B. Fungsi Agregasi &amp; Grouping</h4>
+            <p>Saat menggunakan fungsi agregat seperti <code>COUNT</code>, <code>SUM</code>, atau <code>AVG</code> bersama dengan kolom non-agregat, Anda <b>wajib</b> mendeklarasikan klausa <code>GROUP BY</code>.</p>
+            <pre class="code-block">SELECT kode_kategori, COUNT(kode_produk) AS total_item
+FROM ms_produk
+GROUP BY kode_kategori;</pre>
+        </div>
+
+        <div class="tutorial-block">
+            <h4>C. Menggabungkan Banyak Tabel (Multi-Table JOIN)</h4>
+            <p>Pastikan kondisi kunci utama (Primary Key) dan kunci tamu (Foreign Key) terpasang presisi pada klausa <code>ON</code>.</p>
+            <pre class="code-block">SELECT e.first_name, d.dept_name
+FROM employees e
+INNER JOIN dept_emp de ON e.emp_no = de.emp_no
+INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
         </div>
         
         <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-top: 25px; font-size: 13px; border-left: 4px solid #ffc107;">
@@ -550,9 +641,11 @@
         return `https://lh3.googleusercontent.com/u/0/d/${idFile}`;
     }
 
-    // Set gambar kisi-kisi saat halaman dimuat pertama kali
-    document.getElementById("img-kisi-phi").src = dapatkanUrlDrive(DRIVE_IMG_PHI_ID, LOCAL_IMG_PHI);
-    document.getElementById("img-kisi-emp").src = dapatkanUrlDrive(DRIVE_IMG_EMP_ID, LOCAL_IMG_EMP);
+    // Set gambar kisi-kisi jika elemen gambar landing tersedia.
+    const imgKisiPhi = document.getElementById("img-kisi-phi");
+    const imgKisiEmp = document.getElementById("img-kisi-emp");
+    if (imgKisiPhi) imgKisiPhi.src = dapatkanUrlDrive(DRIVE_IMG_PHI_ID, LOCAL_IMG_PHI);
+    if (imgKisiEmp) imgKisiEmp.src = dapatkanUrlDrive(DRIVE_IMG_EMP_ID, LOCAL_IMG_EMP);
 
     let dataSoalGlobal = [];
     let indeksSoalAktif = 0;
