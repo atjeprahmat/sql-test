@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Join Master - SQL Testing Engine</title>
+    <style>
+        :root {
+            --primary-color: #1d4ed8;
+            --primary-dark: #1e40af;
+            --primary-soft: #dbeafe;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --muted-color: #64748b;
+            --border-color: #e2e8f0;
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--primary-color);
+            color: #ffffff;
+            box-shadow: 0 10px 24px rgba(30, 64, 175, 0.2);
+        }
+
+        .header-inner {
+            width: 100%;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.14);
+            display: grid;
+            place-items: center;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+        }
+
+        .brand h1 {
+            font-size: 21px;
+            line-height: 1.1;
+            margin: 0;
+            font-weight: 800;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: #bfdbfe;
+            font-size: 12px;
+        }
+
+        .header-pill {
+            background: #1e40af;
+            color: #bfdbfe;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1120px;
+            padding: 24px 20px 40px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            padding: 28px;
+            margin-bottom: 22px;
+            animation: fadeIn 0.45s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+            letter-spacing: 0;
+        }
+
+        h2 {
+            font-size: 28px;
+            line-height: 1.2;
+            color: #0f172a;
+        }
+
+        h3 {
+            font-size: 21px;
+            color: #1e40af;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #0f172a;
+            background: #ffffff;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+            outline: none;
+        }
+
+        textarea {
+            font-family: 'Courier New', Courier, monospace;
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 20px rgba(29, 78, 216, 0.18);
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #475569;
+            box-shadow: 0 10px 20px rgba(71, 85, 105, 0.14);
+        }
+        .btn-secondary:hover {
+            background-color: #334155;
+        }
+
+        .btn-nav-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* Loading Screen Style */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(248, 250, 252, 0.92);
+            backdrop-filter: blur(6px);
+            z-index: 9999;
+            text-align: center;
+            padding-top: 20vh;
+        }
+
+        .spinner {
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .badge {
+            background: var(--primary-soft);
+            color: var(--primary-color);
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .erd-box img {
+            max-width: 100%;
+            max-height: 400px;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            display: block;
+            margin: 15px auto;
+            background: #ffffff;
+        }
+
+        .hasil-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .card-soal {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .card-soal h4 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 14px;
+        }
+
+        .card-soal p {
+            color: #334155 !important;
+            background: #f8fafc !important;
+            border-left-color: var(--primary-color) !important;
+            border-radius: 12px !important;
+        }
+
+        #exam-container > div:first-child {
+            border-bottom-color: var(--border-color) !important;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        #identitas-peserta {
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 7px 11px;
+        }
+
+        #skor-besar {
+            color: var(--primary-color) !important;
+        }
+
+        .grid-kisi {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .grid-kisi > div {
+            border: 1px solid var(--border-color) !important;
+            border-radius: 16px !important;
+            background: #ffffff !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        #kisi-container > div[style*="background: #e8f0fe"] {
+            background: #eff6ff !important;
+            border-left-color: var(--primary-color) !important;
+        }
+
+        #kisi-container > div[style*="background: #fff3cd"] {
+            background: #fffbeb !important;
+            color: #92400e !important;
+            border-left-color: #f59e0b !important;
+        }
+
+        .info-list {
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .info-list li {
+            margin-bottom: 6px;
+        }
+
+        .security-lock {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(32, 33, 36, 0.92);
+            z-index: 10000;
+            color: #ffffff;
+            text-align: center;
+            padding: 22vh 24px 0;
+            box-sizing: border-box;
+        }
+
+        .security-lock h2 {
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .security-lock p {
+            max-width: 620px;
+            margin: 0 auto 22px;
+            line-height: 1.6;
+            color: #f1f3f4;
+        }
+
+        .app-footer {
+            background: #e2e8f0;
+            color: #64748b;
+            text-align: center;
+            padding: 18px;
+            font-size: 14px;
+        }
+
+        code {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 2px 5px;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 720px) {
+            .header-inner {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .header-pill {
+                width: 100%;
+                text-align: center;
+            }
+
+            .container {
+                padding: 16px 12px 32px;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 14px;
+            }
+
+            h2 {
+                font-size: 23px;
+            }
+
+            .btn-nav-container button {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-inner">
+        <div class="brand">
+            <div class="brand-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                </svg>
+            </div>
+            <div>
+                <h1>SQL Join Master</h1>
+                <p>SQL Testing Engine - Basis Data XI PPLG</p>
+            </div>
+        </div>
+        <div class="header-pill">Mode Ujian Terproteksi</div>
+    </div>
+</header>
+
+<div class="container">
+    <div id="kisi-container" class="card">
+        <h2>Kisi-Kisi Struktur Skema & Panduan Materi Ujian</h2>
+        <p style="color: #5f6368; font-size: 14px;">Silakan pelajari dengan cermat arsitektur relasi tabel serta distribusi indikator kompetensi SQL di bawah ini sebelum melanjutkan ke menu ujian:</p>
+        
+        <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary-color); margin-bottom: 25px;">
+            <h4 style="margin: 0 0 8px 0; color: var(--primary-color);">Komposisi & Distribusi Soal Ujian</h4>
+            <ul class="info-list" style="margin: 0;">
+                <li><b>Soal 1 (Level Mudah):</b> Penyaringan data baris tunggal menggunakan klausa <code>SELECT ... FROM ... WHERE</code>.</li>
+                <li><b>Soal 2 (Level Mudah):</b> Fungsi Agregasi dasar untuk pengolahan angka statistik matematika (<code>SUM</code> atau <code>MAX</code>).</li>
+                <li><b>Soal 3 (Level Mudah):</b> Perintah Data Manipulation Language (DML) dasar untuk modifikasi record data (<code>INSERT INTO</code> atau <code>UPDATE</code>).</li>
+                <li><b>Soal 4 (Level Sedang):</b> Teknik relasi penggabungan dua tabel yang saling berhubungan menggunakan perintah <code>INNER JOIN ... ON ...</code>.</li>
+                <li><b>Soal 5 (Level Sedang):</b> Pengelompokan metrik data berjenjang yang mengombinasikan klausa <code>GROUP BY</code> dengan fungsi agregat (<code>COUNT</code> atau <code>AVG</code>).</li>
+            </ul>
+        </div>
+
+        <h3 style="border-bottom: 2px solid #f1f3f4; padding-bottom: 5px; margin-top: 25px;">Visualisasi Diagram Arsitektur Database Relasional:</h3>
+        <div class="grid-kisi">
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa;">
+                <h4 style="margin: 0 0 5px 0; color: #1a73e8;">Tema A: PHI Minimart (Sistem Transaksi Penjualan)</h4>
+                <p style="font-size: 13px; margin: 0 0 12px 0; color:#666;">
+                    Skema ini fokus pada pengelolaan data retail penjualan barang dagang.
+                </p>
+                <div class="erd-box">
+                    <img id="img-kisi-phi" src="" alt="Skema ERD PHI Minimart">
+                </div>
+            </div>
+
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa;">
+                <h4 style="margin: 0 0 5px 0; color: #1a73e8;">Tema B: Employees Corporate (Sistem Data SDM / HRD)</h4>
+                <p style="font-size: 13px; margin: 0 0 12px 0; color:#666;">
+                    Skema ini fokus pada struktur relasional data ketenagakerjaan di internal perusahaan.
+                </p>
+                <div class="erd-box">
+                    <img id="img-kisi-emp" src="" alt="Skema ERD Employees Corporate">
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-top: 25px; font-size: 13px; border-left: 4px solid #ffc107;">
+            <b>Pemberitahuan Sistem Keamanan Layar:</b><br>
+            Saat Anda menekan tombol lanjut dan memulai ujian, aplikasi akan mengunci browser ke dalam mode <b>Layar Penuh (Full Screen)</b>. Menekan tombol keluar atau berpindah tab browser selama pengerjaan berlangsung akan memicu sistem proteksi kecurangan otomatis.
+        </div>
+        <br>
+        <button onclick="bukaHalamanAuth()" style="background-color: var(--primary-color); padding: 15px 24px; font-size: 18px; width: 100%;">Lanjutkan ke Autentikasi Login & Ujian</button>
+    </div>
+
+    <div id="auth-container" class="card" style="display: none;">
+        <h2>Autentikasi Peserta Ujian SQL</h2>
+        <p style="color: #5f6368; font-size: 14px; margin-bottom: 25px;">
+            Silakan isi nomor induk dan nama lengkap Anda untuk mengunduh paket data soal secara acak.
+        </p>
+        
+        <div class="form-group">
+            <label for="nis">Nomor Induk Siswa (NIS):</label>
+            <input type="text" id="nis" placeholder="Contoh: 12345678">
+        </div>
+        
+        <div class="form-group">
+            <label for="nama">Nama Lengkap Siswa:</label>
+            <input type="text" id="nama" placeholder="Contoh: Budi Santoso">
+        </div>
+        
+        <button onclick="mintaMasukFullScreen()" style="width: 100%; margin-bottom: 10px;">Mulai Ujian & Kunci Layar Penuh</button>
+        <button class="btn-secondary" onclick="kembaliKeKisi()" style="width: 100%;">Kembali Lihat Kisi-Kisi</button>
+    </div>
+
+    <div id="exam-container" class="card" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f1f3f4; padding-bottom: 10px;">
+            <h3 id="tema-judul" style="margin: 0;">Memuat Tema...</h3>
+            <span id="identitas-peserta" style="font-size: 14px; color: #5f6368; font-weight: bold;"></span>
+        </div>
+
+        <div id="kontainer-area-soal"></div>
+
+        <div class="btn-nav-container">
+            <button id="btn-prev" class="btn-secondary" onclick="pindahSoal(-1)">Sebelumnya</button>
+            <button id="btn-next" onclick="pindahSoal(1)">Selanjutnya</button>
+            <button id="btn-submit" onclick="kirimJawabanSiswa()" style="background-color: #16a34a; display: none;">Selesai & Kirim</button>
+        </div>
+    </div>
+
+    <div id="result-container" class="card" style="display: none;">
+        <h2 style="color: #16a34a; text-align: center;">Ujian SQL Selesai Ditinjau</h2>
+        <div style="text-align: center; margin: 25px 0;">
+            <div style="font-size: 16px; font-weight: 500;">Skor Akhir Anda:</div>
+            <div id="skor-besar" style="font-size: 72px; font-weight: bold; color: #1a73e8; margin: 10px 0;">0</div>
+            <p id="info-rekap-siswa" style="color: #5f6368;"></p>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #dadce0; margin: 20px 0;">
+        <h3>Rincian Evaluasi Jawaban</h3>
+        <div id="kontainer-review-detail"></div>
+    </div>
+</div>
+
+<footer class="app-footer">
+    SQL Join Master - Media evaluasi SQL dan basis data.
+</footer>
+
+<div id="loading-screen" class="loading-overlay">
+    <div class="spinner"></div>
+    <h3 id="loading-text" style="color: #3c4043;">Sedang Menghubungkan ke Server Core API...</h3>
+    <p style="color: #70757a; font-size: 14px; padding: 0 20px;">Mohon tunggu, proses inisialisasi/koreksi otomatis memakan waktu beberapa detik.</p>
+</div>
+
+<div id="security-lock" class="security-lock">
+    <h2>Peringatan Keamanan Ujian</h2>
+    <p>Mode layar penuh terputus atau tab ujian tidak aktif. Kejadian ini sudah dicatat dan akan ikut dikirim bersama hasil ujian.</p>
+    <button onclick="paksaKunciLayarPenuh()">Kunci Layar Penuh Lagi</button>
+</div>
+
+<script>
+    // =========================================================================
+    // CONFIG URL SERVER GAS & LINK CLOUD STORAGE GOOGLE DRIVE
+    // =========================================================================
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby8UGR__hydRzQDiGAxapn8FFyKyt6Tvnjz0Y3zsOOr4o2YlW5GrSvPvUsyyDhMf-Z5/exec";
+    const ENDPOINT_TIMEOUT_MS = 12000;
+
+    // 🔴 WAJIB: Ganti ID di bawah ini dengan ID file as   dari dalam folder Google Drive Anda!
+    // Pastikan status berbagi kedua file tersebut sudah diatur ke "Siapa saja yang memiliki link dapat melihat"
+    const DRIVE_IMG_PHI_ID = "1AimPD54ZoqUFYtTEY_MN-Wokd3R6zAZx"; 
+    const DRIVE_IMG_EMP_ID = "1OG5RGySo5uHWo1CSEr-bnEgDWmRzUCs4";
+    const LOCAL_IMG_PHI = "phi_minimart.png";
+    const LOCAL_IMG_EMP = "employees.jpg";
+
+    // Fungsi utilitas pembuat tautan langsung cloud
+    function dapatkanUrlDrive(idFile, fallbackLokal) {
+        if (fallbackLokal) return fallbackLokal;
+        return `https://lh3.googleusercontent.com/u/0/d/${idFile}`;
+    }
+
+    // Set gambar kisi-kisi saat halaman dimuat pertama kali
+    document.getElementById("img-kisi-phi").src = dapatkanUrlDrive(DRIVE_IMG_PHI_ID, LOCAL_IMG_PHI);
+    document.getElementById("img-kisi-emp").src = dapatkanUrlDrive(DRIVE_IMG_EMP_ID, LOCAL_IMG_EMP);
+
+    let dataSoalGlobal = [];
+    let indeksSoalAktif = 0;
+    let isExamRunning = false;
+    let isSubmittingExam = false;
+    let memoriJawabanSiswa = {}; 
+    let modeBackendAktif = "google";
+    let waktuMulaiUjian = null;
+    let jumlahPelanggaranFullscreen = 0;
+    let logKeamananUjian = [];
+    let sedangMemintaFullscreen = false;
+
+    const BANK_SOAL_LOKAL = {
+        PHI_Minimart: [
+            {
+                tipe: "Mudah",
+                tanya: "Tampilkan semua data barang dengan harga jual lebih dari 10000.",
+                expected: ["select", "from", "barang", "where", "harga"]
+            },
+            {
+                tipe: "Mudah",
+                tanya: "Hitung total stok seluruh barang yang tersedia.",
+                expected: ["select", "sum", "stok", "from", "barang"]
+            },
+            {
+                tipe: "Mudah",
+                tanya: "Tambahkan satu data barang baru ke tabel barang.",
+                expected: ["insert", "into", "barang", "values"]
+            },
+            {
+                tipe: "Sedang",
+                tanya: "Tampilkan nama barang dan nama kategori menggunakan INNER JOIN.",
+                expected: ["select", "from", "inner", "join", "on"]
+            },
+            {
+                tipe: "Sedang",
+                tanya: "Hitung jumlah barang pada setiap kategori menggunakan GROUP BY.",
+                expected: ["select", "count", "from", "group", "by"]
+            }
+        ],
+        Employees_Corporate: [
+            {
+                tipe: "Mudah",
+                tanya: "Tampilkan semua data pegawai yang bekerja pada departemen IT.",
+                expected: ["select", "from", "pegawai", "where"]
+            },
+            {
+                tipe: "Mudah",
+                tanya: "Tampilkan gaji tertinggi dari seluruh pegawai.",
+                expected: ["select", "max", "gaji", "from", "pegawai"]
+            },
+            {
+                tipe: "Mudah",
+                tanya: "Perbarui jabatan salah satu pegawai menggunakan UPDATE.",
+                expected: ["update", "set", "where"]
+            },
+            {
+                tipe: "Sedang",
+                tanya: "Tampilkan nama pegawai dan nama departemen menggunakan INNER JOIN.",
+                expected: ["select", "from", "inner", "join", "on"]
+            },
+            {
+                tipe: "Sedang",
+                tanya: "Hitung rata-rata gaji pegawai pada setiap departemen menggunakan GROUP BY.",
+                expected: ["select", "avg", "from", "group", "by"]
+            }
+        ]
+    };
+
+    async function panggilBackend(payload) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), ENDPOINT_TIMEOUT_MS);
+
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            return await response.json();
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    function ambilPaketSoalLokal() {
+        const temaKeys = Object.keys(BANK_SOAL_LOKAL);
+        const tema = temaKeys[Math.floor(Math.random() * temaKeys.length)];
+        return {
+            status: "success",
+            data: {
+                tema,
+                soal: BANK_SOAL_LOKAL[tema]
+            }
+        };
+    }
+
+    function normalisasiSql(teks) {
+        return (teks || "").toLowerCase().replace(/\s+/g, " ").trim();
+    }
+
+    function evaluasiJawabanLokal({ tema, nis, nama, jawaban }) {
+        const soal = BANK_SOAL_LOKAL[tema] || [];
+        const detail = soal.map((item, index) => {
+            const sql = normalisasiSql(jawaban[index]);
+            const totalKunci = item.expected.length;
+            const cocok = item.expected.filter(kunci => sql.includes(kunci)).length;
+            const skor = sql ? Math.round((cocok / totalKunci) * 100) : 0;
+
+            return {
+                nomorSoal: index + 1,
+                tipe: item.tipe,
+                pertanyaan: item.tanya,
+                jawabanSiswa: jawaban[index],
+                skor,
+                catatan: skor >= 80
+                    ? "Struktur query sudah mendekati indikator utama soal."
+                    : "Periksa kembali kata kunci SQL, nama tabel, klausa, dan relasi yang diminta."
+            };
+        });
+
+        const skorAkhir = detail.length
+            ? Math.round(detail.reduce((total, item) => total + item.skor, 0) / detail.length)
+            : 0;
+
+        return {
+            status: "success",
+            data: { skorAkhir, nama, nis, tema, detail }
+        };
+    }
+
+    // FUNGSI NAVIGASI ALUR UTAMA
+    function bukaHalamanAuth() {
+        document.getElementById("kisi-container").style.display = "none";
+        document.getElementById("auth-container").style.display = "block";
+        window.scrollTo(0, 0);
+    }
+
+    function kembaliKeKisi() {
+        document.getElementById("auth-container").style.display = "none";
+        document.getElementById("kisi-container").style.display = "block";
+        window.scrollTo(0, 0);
+    }
+
+    function isLayarPenuhAktif() {
+        return Boolean(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+        );
+    }
+
+    function catatEventKeamanan(tipe, detail) {
+        const event = {
+            waktu: new Date().toISOString(),
+            tipe,
+            detail,
+            nomorSoal: indeksSoalAktif + 1,
+            url: window.location.href
+        };
+        logKeamananUjian.push(event);
+        localStorage.setItem("ujian_log_keamanan", JSON.stringify(logKeamananUjian));
+    }
+
+    function tampilkanKunciKeamanan() {
+        document.getElementById("security-lock").style.display = "block";
+    }
+
+    function sembunyikanKunciKeamanan() {
+        document.getElementById("security-lock").style.display = "none";
+    }
+
+    async function requestLayarPenuh() {
+        const docElm = document.documentElement;
+        sedangMemintaFullscreen = true;
+
+        try {
+            if (docElm.requestFullscreen) { await docElm.requestFullscreen(); }
+            else if (docElm.mozRequestFullScreen) { await docElm.mozRequestFullScreen(); }
+            else if (docElm.webkitRequestFullscreen) { await docElm.webkitRequestFullscreen(); }
+            else if (docElm.msRequestFullscreen) { await docElm.msRequestFullscreen(); }
+            else { throw new Error("Browser tidak mendukung fullscreen"); }
+        } finally {
+            sedangMemintaFullscreen = false;
+        }
+    }
+
+    // LOGIKA LAYAR PENUH (FULL SCREEN ANTI-CHEAT)
+    async function mintaMasukFullScreen() {
+        const nis = document.getElementById("nis").value.trim();
+        const nama = document.getElementById("nama").value.trim();
+
+        if (!nis || !nama) {
+            alert("Harap lengkapi nomor induk siswa (NIS) dan nama Anda!");
+            return;
+        }
+
+        try {
+            await requestLayarPenuh();
+
+            if (!isLayarPenuhAktif()) {
+                throw new Error("Mode layar penuh belum aktif");
+            }
+
+            await mulaiUjian();
+        } catch (error) {
+            alert("Ujian hanya dapat dimulai setelah browser masuk mode layar penuh. Klik tombol mulai lagi dan izinkan fullscreen jika browser meminta izin.");
+            console.warn("Fullscreen gagal dimulai.", error);
+        }
+    }
+
+    async function paksaKunciLayarPenuh() {
+        try {
+            await requestLayarPenuh();
+            if (isLayarPenuhAktif()) {
+                sembunyikanKunciKeamanan();
+                catatEventKeamanan("fullscreen_dikunci_ulang", "Peserta mengaktifkan ulang mode layar penuh.");
+            }
+        } catch (error) {
+            alert("Browser belum mengizinkan layar penuh. Klik tombol ini lagi dan jangan berpindah tab.");
+            console.warn("Gagal mengunci ulang fullscreen.", error);
+        }
+    }
+
+    document.addEventListener("fullscreenchange", periksaKecuranganLayar);
+    document.addEventListener("webkitfullscreenchange", periksaKecuranganLayar);
+    document.addEventListener("mozfullscreenchange", periksaKecuranganLayar);
+    document.addEventListener("MSFullscreenChange", periksaKecuranganLayar);
+
+    function periksaKecuranganLayar() {
+        if (isSubmittingExam) return;
+
+        if (isExamRunning && !sedangMemintaFullscreen && !isLayarPenuhAktif()) {
+            jumlahPelanggaranFullscreen++;
+            simpanProgresJawaban();
+            catatEventKeamanan("fullscreen_keluar", "Peserta keluar dari mode layar penuh saat ujian berlangsung.");
+            tampilkanKunciKeamanan();
+            alert("PERINGATAN KECURANGAN:\nAnda dilarang keluar dari mode Layar Penuh. Kejadian ini dicatat dan layar harus dikunci kembali.");
+            return;
+        }
+
+        if (isExamRunning && isLayarPenuhAktif()) {
+            sembunyikanKunciKeamanan();
+            return;
+        }
+
+        if (sedangMemintaFullscreen) return;
+
+        const isFullScreenNow = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        
+        if (isExamRunning && !isFullScreenNow) {
+            alert("⚠️ PERINGATAN KECURANGAN:\nAnda dilarang keluar dari mode Layar Penuh! Layar akan dikunci kembali secara otomatis.");
+            const docElm = document.documentElement;
+            if (docElm.requestFullscreen) { docElm.requestFullscreen(); }
+        }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (isExamRunning && !isSubmittingExam && document.hidden) {
+            jumlahPelanggaranFullscreen++;
+            simpanProgresJawaban();
+            catatEventKeamanan("tab_tidak_aktif", "Tab ujian ditinggalkan atau browser diminimize.");
+            tampilkanKunciKeamanan();
+        }
+    });
+
+    window.addEventListener("blur", () => {
+        if (isExamRunning && !isSubmittingExam) {
+            catatEventKeamanan("window_blur", "Fokus browser berpindah dari jendela ujian.");
+        }
+    });
+
+    // FUNGSI 1: MEMANGGIL PAKET SOAL DARI GOOGLE SCRIPT
+    async function mulaiUjian() {
+        const nis = document.getElementById("nis").value.trim();
+        const nama = document.getElementById("nama").value.trim();
+
+        if (!isLayarPenuhAktif()) {
+            alert("Mode layar penuh belum aktif. Ujian tidak dapat dimulai.");
+            return;
+        }
+
+        waktuMulaiUjian = new Date();
+        jumlahPelanggaranFullscreen = 0;
+        logKeamananUjian = [];
+        localStorage.removeItem("ujian_log_keamanan");
+
+        document.getElementById("loading-text").innerText = "Sedang mengunduh paket soal acak...";
+        document.getElementById("loading-screen").style.display = "block";
+
+        try {
+            let result;
+            try {
+                result = await panggilBackend({ action: "getQuestions" });
+                modeBackendAktif = "google";
+            } catch (errorBackend) {
+                console.warn("Backend Google Apps Script tidak dapat dihubungi. Mode lokal dipakai.", errorBackend);
+                result = ambilPaketSoalLokal();
+                modeBackendAktif = "lokal";
+            }
+
+            if (result.status === "success") {
+                localStorage.setItem("ujian_tema", result.data.tema);
+                localStorage.setItem("ujian_nis", nis);
+                localStorage.setItem("ujian_nama", nama);
+                localStorage.setItem("ujian_mode_backend", modeBackendAktif);
+
+                dataSoalGlobal = result.data.soal;
+                indeksSoalAktif = 0;
+                isExamRunning = true; 
+
+                dataSoalGlobal.forEach((_, idx) => { memoriJawabanSiswa[idx] = ""; });
+
+                document.getElementById("identitas-peserta").innerText = `${nama} (${nis})`;
+                const labelMode = modeBackendAktif === "lokal" ? " (Mode Lokal)" : "";
+                document.getElementById("tema-judul").innerText = "Studi Kasus: " + result.data.tema.replace("_", " ") + labelMode;
+                
+                document.getElementById("auth-container").style.display = "none";
+                document.getElementById("exam-container").style.display = "block";
+                
+                tampilkanSoalSpesifik();
+            } else {
+                alert("Gagal memuat soal dari server: " + result.message);
+            }
+            document.getElementById("loading-screen").style.display = "none";
+        } catch (error) {
+            alert("Koneksi gagal: " + error.toString());
+            document.getElementById("loading-screen").style.display = "none";
+        }
+    }
+
+    // FUNGSI 2: MERENDER SATU SOAL TUNGGAL (MENEMBAK LINK DRIVE CLOUD)
+    function tampilkanSoalSpesifik() {
+        const soal = dataSoalGlobal[indeksSoalAktif];
+        const totalSoal = dataSoalGlobal.length;
+        const temaAktif = localStorage.getItem("ujian_tema");
+
+        // Alihkan gambar secara dinamis menggunakan ID Google Drive
+        let idGambarTerpilih = DRIVE_IMG_PHI_ID; 
+        if (temaAktif.toLowerCase().includes("employee")) {
+            idGambarTerpilih = DRIVE_IMG_EMP_ID;
+        }
+
+        const urlGambarFinal = temaAktif.toLowerCase().includes("employee")
+            ? dapatkanUrlDrive(idGambarTerpilih, LOCAL_IMG_EMP)
+            : dapatkanUrlDrive(idGambarTerpilih, LOCAL_IMG_PHI);
+
+        let htmlSoal = `
+            <div class="card-soal">
+                <h4 style="margin-bottom: 10px; color: #202124;">
+                    Pertanyaan Ke-${indeksSoalAktif + 1} dari ${totalSoal} <span class="badge">Level ${soal.tipe}</span>
+                </h4>
+                
+                <div class="erd-box">
+                    <img src="${urlGambarFinal}" alt="Skema Relasi ERD Cloud">
+                </div>
+
+                <p style="font-size: 15px; font-weight: 500; background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--primary-color); line-height: 1.5;">
+                    ${soal.tanya}
+                </p>
+                
+                <label style="color: #5f6368;">Ketik Perintah SQL Anda:</label>
+                <textarea id="input-jawaban-aktif" placeholder="SELECT ... FROM ... WHERE ..." rows="5" oninput="simpanProgresJawaban()"></textarea>
+            </div>
+        `;
+
+        document.getElementById("kontainer-area-soal").innerHTML = htmlSoal;
+
+        // Restore nilai input
+        document.getElementById("input-jawaban-aktif").value = memoriJawabanSiswa[indeksSoalAktif];
+
+        // Atur Kontrol Navigasi
+        document.getElementById("btn-prev").style.visibility = (indeksSoalAktif === 0) ? "hidden" : "visible";
+        
+        if (indeksSoalAktif === totalSoal - 1) {
+            document.getElementById("btn-next").style.display = "none";
+            document.getElementById("btn-submit").style.display = "inline-block";
+        } else {
+            document.getElementById("btn-next").style.display = "inline-block";
+            document.getElementById("btn-submit").style.display = "none";
+        }
+        
+        window.scrollTo(0, 0);
+    }
+
+    function simpanProgresJawaban() {
+        const teks = document.getElementById("input-jawaban-aktif").value;
+        memoriJawabanSiswa[indeksSoalAktif] = teks;
+    }
+
+    function pindahSoal(arah) {
+        simpanProgresJawaban(); 
+        indeksSoalAktif += arah;
+        tampilkanSoalSpesifik();
+    }
+
+    // FUNGSI 3: MENGIRIM JAWABAN KE BACKEND
+    async function kirimJawabanSiswa() {
+        simpanProgresJawaban(); 
+
+        if (!confirm("Apakah Anda yakin ingin menyelesaikan ujian dan mengirim seluruh berkas query SQL Anda?")) {
+            return;
+        }
+
+        isSubmittingExam = true;
+        isExamRunning = false;
+        sembunyikanKunciKeamanan();
+
+        const tema = localStorage.getItem("ujian_tema");
+        const nis = localStorage.getItem("ujian_nis");
+        const nama = localStorage.getItem("ujian_nama");
+
+        let kumpulanJawaban = [];
+        for (let i = 0; i < dataSoalGlobal.length; i++) {
+            kumpulanJawaban.push(memoriJawabanSiswa[i].trim());
+        }
+
+        document.getElementById("loading-text").innerText = "Sedang mengevaluasi ketepatan sintaks SQL Anda menggunakan Gemini AI Engine...\nMohon tunggu, proses validasi membutuhkan waktu beberapa detik.";
+        document.getElementById("loading-screen").style.display = "block";
+
+        try {
+            const waktuSelesaiUjian = new Date();
+            const durasiDetik = waktuMulaiUjian
+                ? Math.round((waktuSelesaiUjian.getTime() - waktuMulaiUjian.getTime()) / 1000)
+                : null;
+            const payload = {
+                action: "submitAnswers",
+                tema: tema,
+                nis: nis,
+                nama: nama,
+                jawaban: kumpulanJawaban,
+                soal: dataSoalGlobal.map(item => ({
+                    tipe: item.tipe,
+                    tanya: item.tanya
+                })),
+                modeBackend: localStorage.getItem("ujian_mode_backend") || modeBackendAktif,
+                waktuMulai: waktuMulaiUjian ? waktuMulaiUjian.toISOString() : "",
+                waktuSelesai: waktuSelesaiUjian.toISOString(),
+                durasiDetik: durasiDetik,
+                pelanggaranFullscreen: jumlahPelanggaranFullscreen,
+                logKeamanan: logKeamananUjian,
+                userAgent: navigator.userAgent
+            };
+
+            let result;
+            try {
+                result = await panggilBackend(payload);
+            } catch (errorBackend) {
+                console.warn("Pengiriman ke Google Apps Script gagal. Evaluasi lokal dipakai dan data tidak masuk Spreadsheet.", errorBackend);
+                result = evaluasiJawabanLokal(payload);
+                result.data.statusSpreadsheet = "gagal";
+                result.data.pesanSpreadsheet = "Endpoint Google Apps Script tidak dapat dihubungi, sehingga hasil belum tersimpan ke Spreadsheet.";
+            }
+
+            if (result.status === "success") {
+                isSubmittingExam = false;
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+                tampilkanHasilSkorAkhir(result.data);
+            } else {
+                isSubmittingExam = false;
+                alert("Gagal memproses penilaian: " + result.message);
+                document.getElementById("loading-screen").style.display = "none";
+            }
+        } catch (error) {
+            isSubmittingExam = false;
+            alert("Terjadi gangguan pengiriman data: " + error.toString());
+            document.getElementById("loading-screen").style.display = "none";
+        }
+    }
+
+    // FUNGSI 4: MENAMPILKAN KARTU SKOR AKHIR DAN CATATAN AI
+    function tampilkanHasilSkorAkhir(dataEvaluasi) {
+        document.getElementById("exam-container").style.display = "none";
+        document.getElementById("loading-screen").style.display = "none";
+        document.getElementById("result-container").style.display = "block";
+        window.scrollTo(0, 0);
+
+        document.getElementById("skor-besar").innerText = dataEvaluasi.skorAkhir;
+        const infoKeamanan = `Pelanggaran fullscreen/tab: ${jumlahPelanggaranFullscreen}`;
+        const infoSpreadsheet = dataEvaluasi.statusSpreadsheet === "gagal"
+            ? " | Spreadsheet: belum tersimpan"
+            : " | Spreadsheet: terkirim ke server";
+        document.getElementById("info-rekap-siswa").innerText = `Nama: ${dataEvaluasi.nama} | NIS: ${dataEvaluasi.nis} | Paket: ${dataEvaluasi.tema} | ${infoKeamanan}${infoSpreadsheet}`;
+
+        let htmlReview = "";
+        dataEvaluasi.detail.forEach(item => {
+            htmlReview += `
+                <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #dadce0; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;">
+                        <span>Soal Nomor ${item.nomorSoal} (${item.tipe})</span>
+                        <span style="color: #1a73e8;">Skor Nilai: ${item.skor}</span>
+                    </div>
+                    <p style="margin: 5px 0; font-size: 14px; color: #5f6368;"><b>Pertanyaan:</b> ${item.pertanyaan}</p>
+                    <p style="margin: 5px 0; font-size: 14px; font-family: monospace; background: #fafafa; padding: 6px; border-radius: 4px;"><b>Query Anda:</b> ${item.jawabanSiswa || '[Kosong]'}</p>
+                </div>
+            `;
+        });
+
+        document.getElementById("kontainer-review-detail").innerHTML = htmlReview;
+    }
+</script>
+
+</body>
+</html>
