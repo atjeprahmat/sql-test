@@ -655,7 +655,7 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
     // =========================================================================
     // CONFIG URL SERVER GAS & LINK CLOUD STORAGE GOOGLE DRIVE
     // =========================================================================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby7ShJwooi6j5R3a29bT_qwc1oNzX9u4XR-Qgn1MFCTdR85q94L570IJ9NVNgu83q1i/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlBXhY7w9HcaqJuRdh_RubEj7ryXDrZS6ft0F3Eb194eqOmGhJAeYG0ggbD8vnYnnv/exec";
     const ENDPOINT_TIMEOUT_MS = 12000;
 
     // 🔴 WAJIB: Ganti ID di bawah ini dengan ID file as   dari dalam folder Google Drive Anda!
@@ -833,13 +833,103 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
         return !/\b(select|insert|update|delete|with|create|alter|drop)\b/i.test(teks);
     }
 
+    function mengandungTokenSql(teks, token) {
+        const bersih = normalisasiSql(token).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp("(^|[^a-z0-9_])" + bersih + "([^a-z0-9_]|$)", "i").test(normalisasiSql(teks));
+    }
+
+    function hitungCocokSql(jawaban, daftar) {
+        return daftar.filter(item => mengandungTokenSql(jawaban, item)).length;
+    }
+
+    function ambilNilaiKondisiFrontend(teks) {
+        const hasil = [];
+        const sumber = String(teks || "");
+        let match;
+        const regexKutip = /'([^']+)'/g;
+        while ((match = regexKutip.exec(sumber)) !== null) hasil.push(normalisasiSql(match[1]));
+
+        const regexAngkaTanggal = /\b\d{4}-\d{2}-\d{2}\b|\b\d+\b|ktg\d+\b/gi;
+        while ((match = regexAngkaTanggal.exec(sumber)) !== null) hasil.push(normalisasiSql(match[0]));
+
+        ["jakarta", "laki-laki"].forEach(kata => {
+            if (normalisasiSql(sumber).includes(kata)) hasil.push(kata);
+        });
+
+        return hasil.filter((item, index, array) => item && array.indexOf(item) === index);
+    }
+
+    function bangunRubrikFrontend(pertanyaanAsli) {
+        const pertanyaan = normalisasiSql(pertanyaanAsli);
+        const daftarTabel = ["ms_produk", "tr_penjualan", "ms_kategori", "ms_cabang", "employees", "salaries", "departments", "dept_emp", "titles"];
+        const daftarKolom = ["kode_produk", "nama_produk", "kode_kategori", "nama_kategori", "jumlah_pembelian", "kode_cabang", "nama_cabang", "harga", "gender", "salary", "emp_no", "first_name", "last_name", "birth_date", "dept_no", "dept_name", "title"];
+        const operasi = [];
+        if (pertanyaan.includes("hapus") || pertanyaan.includes("delete")) operasi.push("delete");
+        else if (pertanyaan.includes("menambahkan") || pertanyaan.includes("tambahkan") || pertanyaan.includes("insert")) operasi.push("insert");
+        else if (pertanyaan.includes("mengubah") || pertanyaan.includes("update")) operasi.push("update");
+        else operasi.push("select");
+
+        const fungsi = [];
+        if (pertanyaan.includes("sum") || pertanyaan.includes("total seluruh jumlah pembelian")) fungsi.push("sum");
+        if (pertanyaan.includes("max") || pertanyaan.includes("tertinggi") || pertanyaan.includes("terbesar")) fungsi.push("max");
+        if (pertanyaan.includes("avg") || pertanyaan.includes("rata-rata")) fungsi.push("avg");
+        if (pertanyaan.includes("count") || pertanyaan.includes("jumlah seluruh") || pertanyaan.includes("jumlah karyawan") || pertanyaan.includes("jumlah baris")) fungsi.push("count");
+
+        const klausa = [];
+        if (pertanyaan.includes("join") || pertanyaan.includes("menggabungkan")) klausa.push("join", "on");
+        if (pertanyaan.includes("group by") || pertanyaan.includes("kelompokkan")) klausa.push("group", "by");
+        if (pertanyaan.includes("memiliki") || pertanyaan.includes("khusus") || pertanyaan.includes("lebih dari") || pertanyaan.includes("setelah") || pertanyaan.includes("berlokasi")) klausa.push("where");
+        if (operasi[0] === "insert") klausa.push("into", "values");
+        if (operasi[0] === "update") klausa.push("set", "where");
+        if (operasi[0] === "delete") klausa.push("from", "where");
+
+        const tabelTersirat = [];
+        if (pertanyaan.includes("kategori")) tabelTersirat.push("ms_kategori");
+        if (pertanyaan.includes("produk")) tabelTersirat.push("ms_produk");
+        if (pertanyaan.includes("transaksi") || pertanyaan.includes("penjualan") || pertanyaan.includes("pembelian")) tabelTersirat.push("tr_penjualan");
+        if (pertanyaan.includes("cabang")) tabelTersirat.push("ms_cabang");
+        if (pertanyaan.includes("karyawan") || pertanyaan.includes("pegawai")) tabelTersirat.push("employees");
+
+        const kolomTersirat = [];
+        if (pertanyaan.includes("kode kategori") || pertanyaan.includes("kodenya ktg") || pertanyaan.includes("kode_kategori")) kolomTersirat.push("kode_kategori");
+        if (pertanyaan.includes("nama kategori") || pertanyaan.includes("nama_kategori")) kolomTersirat.push("nama_kategori");
+        if (pertanyaan.includes("nama produk") || pertanyaan.includes("nama_produk")) kolomTersirat.push("nama_produk");
+        if (pertanyaan.includes("harga")) kolomTersirat.push("harga");
+
+        return {
+            operasi,
+            tabel: daftarTabel.filter(item => pertanyaan.includes(item)).concat(tabelTersirat).filter((item, index, array) => array.indexOf(item) === index),
+            kolom: daftarKolom.filter(item => pertanyaan.includes(item)).concat(kolomTersirat).filter((item, index, array) => array.indexOf(item) === index),
+            fungsi: fungsi.filter((item, index, array) => array.indexOf(item) === index),
+            klausa: klausa.filter((item, index, array) => array.indexOf(item) === index),
+            nilaiKondisi: ambilNilaiKondisiFrontend(pertanyaanAsli)
+        };
+    }
+
+    function skorFallbackFrontend(sql, pertanyaan) {
+        const jawaban = normalisasiSql(sql);
+        if (jawabanSqlTidakLayak(jawaban)) return 0;
+
+        const rubrik = bangunRubrikFrontend(pertanyaan);
+        let skor = 0;
+        if (rubrik.operasi.some(op => mengandungTokenSql(jawaban, op))) skor += 20;
+        if (rubrik.tabel.length) skor += Math.round((hitungCocokSql(jawaban, rubrik.tabel) / rubrik.tabel.length) * 25);
+        if (rubrik.kolom.length) skor += Math.round((hitungCocokSql(jawaban, rubrik.kolom) / rubrik.kolom.length) * 20);
+        if (rubrik.fungsi.length) skor += Math.round((hitungCocokSql(jawaban, rubrik.fungsi) / rubrik.fungsi.length) * 15);
+        if (rubrik.klausa.length) skor += Math.round((hitungCocokSql(jawaban, rubrik.klausa) / rubrik.klausa.length) * 10);
+        if (rubrik.nilaiKondisi.length) skor += Math.round((hitungCocokSql(jawaban, rubrik.nilaiKondisi) / rubrik.nilaiKondisi.length) * 10);
+
+        if (!rubrik.operasi.some(op => mengandungTokenSql(jawaban, op))) skor = Math.min(skor, 25);
+        if (rubrik.tabel.length && hitungCocokSql(jawaban, rubrik.tabel) === 0) skor = Math.min(skor, 25);
+        if (rubrik.kolom.length && hitungCocokSql(jawaban, rubrik.kolom) === 0) skor = Math.min(skor, 35);
+        return Math.max(0, Math.min(100, Math.round(skor)));
+    }
+
     function evaluasiJawabanLokal({ tema, nis, nama, jawaban }) {
-        const soal = BANK_SOAL_LOKAL[tema] || [];
+        const soal = dataSoalGlobal.length ? dataSoalGlobal : (BANK_SOAL_LOKAL[tema] || []);
         const detail = soal.map((item, index) => {
             const sql = normalisasiSql(jawaban[index]);
-            const totalKunci = item.expected.length;
-            const cocok = jawabanSqlTidakLayak(sql) ? 0 : item.expected.filter(kunci => sql.includes(kunci)).length;
-            const skor = jawabanSqlTidakLayak(sql) ? 0 : Math.round((cocok / totalKunci) * 100);
+            const skor = skorFallbackFrontend(sql, item.tanya);
 
             return {
                 nomorSoal: index + 1,

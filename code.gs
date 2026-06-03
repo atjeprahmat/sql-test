@@ -203,8 +203,7 @@ function simpanHasilFallbackFrontend(dataSiswa) {
   const nis = dataSiswa.nis || "";
   const nama = dataSiswa.nama || "";
   const tema = dataSiswa.tema || "";
-  const detail = Array.isArray(dataSiswa.detail) ? dataSiswa.detail : [];
-  const skorAkhir = Number(dataSiswa.skorAkhir) || 0;
+  const detailInput = Array.isArray(dataSiswa.detail) ? dataSiswa.detail : [];
   const metadataUjian = {
     modeBackend: "frontend_fallback",
     waktuMulai: dataSiswa.waktuMulai || "",
@@ -217,9 +216,33 @@ function simpanHasilFallbackFrontend(dataSiswa) {
     pesanGemini: dataSiswa.pesanGemini || "Hasil dinilai oleh fallback frontend karena Gemini/backend belum aktif."
   };
 
-  if (!detail.length) {
+  if (!detailInput.length) {
     throw new Error("Detail hasil fallback kosong, tidak ada data yang bisa disimpan.");
   }
+
+  const detail = detailInput.map((item, index) => {
+    const paketEvaluasi = {
+      nomorSoal: item.nomorSoal || index + 1,
+      pertanyaan: item.pertanyaan || "",
+      jawabanSiswa: item.jawabanSiswa || "",
+      rubrikWajib: bangunRubrikSoal(item.pertanyaan || "")
+    };
+    const hasilFallback = buatEvaluasiLokal([paketEvaluasi], metadataUjian.pesanGemini)[0];
+    const hasilValidasi = validasiSkorKetat(paketEvaluasi, hasilFallback.skor, hasilFallback.catatan);
+
+    return {
+      nomorSoal: paketEvaluasi.nomorSoal,
+      tipe: item.tipe || "",
+      pertanyaan: paketEvaluasi.pertanyaan,
+      jawabanSiswa: paketEvaluasi.jawabanSiswa,
+      skor: hasilValidasi.skor,
+      catatan: hasilValidasi.catatan
+    };
+  });
+
+  const skorAkhir = detail.length
+    ? Math.round(detail.reduce((total, item) => total + item.skor, 0) / detail.length)
+    : 0;
 
   simpanKeSpreadsheet(nis, nama, tema, skorAkhir, detail, metadataUjian);
 
@@ -414,15 +437,10 @@ function buatEvaluasiLokal(dataPaketUjian, alasanFallback) {
 
       if (operasiBenar) skor += 20;
       if (rubrik.tabel.length) skor += Math.round((tabelCocok / rubrik.tabel.length) * 25);
-      else skor += 25;
       if (rubrik.kolom.length) skor += Math.round((kolomCocok / rubrik.kolom.length) * 20);
-      else skor += 20;
       if (rubrik.fungsi.length) skor += Math.round((fungsiCocok / rubrik.fungsi.length) * 15);
-      else skor += 15;
       if (rubrik.klausa.length) skor += Math.round((klausaCocok / rubrik.klausa.length) * 10);
-      else skor += 10;
       if (rubrik.nilaiKondisi.length) skor += Math.round((nilaiCocok / rubrik.nilaiKondisi.length) * 10);
-      else skor += 10;
 
       skor = Math.max(0, Math.min(100, skor));
     }
@@ -462,7 +480,8 @@ function bangunRubrikSoal(pertanyaanAsli) {
   ];
 
   const operasi = [];
-  if (pertanyaan.indexOf("menambahkan") !== -1 || pertanyaan.indexOf("insert") !== -1) operasi.push("insert");
+  if (pertanyaan.indexOf("hapus") !== -1 || pertanyaan.indexOf("delete") !== -1) operasi.push("delete");
+  else if (pertanyaan.indexOf("menambahkan") !== -1 || pertanyaan.indexOf("tambahkan") !== -1 || pertanyaan.indexOf("insert") !== -1) operasi.push("insert");
   else if (pertanyaan.indexOf("mengubah") !== -1 || pertanyaan.indexOf("update") !== -1) operasi.push("update");
   else operasi.push("select");
 
@@ -480,11 +499,25 @@ function bangunRubrikSoal(pertanyaanAsli) {
   if (pertanyaan.indexOf("memiliki") !== -1 || pertanyaan.indexOf("khusus") !== -1 || pertanyaan.indexOf("lebih dari") !== -1 || pertanyaan.indexOf("setelah") !== -1 || pertanyaan.indexOf("berlokasi") !== -1) klausa.push("where");
   if (operasi[0] === "insert") klausa.push("into", "values");
   if (operasi[0] === "update") klausa.push("set", "where");
+  if (operasi[0] === "delete") klausa.push("from", "where");
+
+  const tabelTersirat = [];
+  if (pertanyaan.indexOf("kategori") !== -1) tabelTersirat.push("ms_kategori");
+  if (pertanyaan.indexOf("produk") !== -1) tabelTersirat.push("ms_produk");
+  if (pertanyaan.indexOf("transaksi") !== -1 || pertanyaan.indexOf("penjualan") !== -1 || pertanyaan.indexOf("pembelian") !== -1) tabelTersirat.push("tr_penjualan");
+  if (pertanyaan.indexOf("cabang") !== -1) tabelTersirat.push("ms_cabang");
+  if (pertanyaan.indexOf("karyawan") !== -1 || pertanyaan.indexOf("pegawai") !== -1) tabelTersirat.push("employees");
+
+  const kolomTersirat = [];
+  if (pertanyaan.indexOf("kode kategori") !== -1 || pertanyaan.indexOf("kodenya ktg") !== -1 || pertanyaan.indexOf("kode_kategori") !== -1) kolomTersirat.push("kode_kategori");
+  if (pertanyaan.indexOf("nama kategori") !== -1 || pertanyaan.indexOf("nama_kategori") !== -1) kolomTersirat.push("nama_kategori");
+  if (pertanyaan.indexOf("nama produk") !== -1 || pertanyaan.indexOf("nama_produk") !== -1) kolomTersirat.push("nama_produk");
+  if (pertanyaan.indexOf("harga") !== -1) kolomTersirat.push("harga");
 
   return {
     operasi: operasi,
-    tabel: daftarTabel.filter(item => pertanyaan.indexOf(item) !== -1),
-    kolom: daftarKolom.filter(item => pertanyaan.indexOf(item) !== -1),
+    tabel: daftarTabel.filter(item => pertanyaan.indexOf(item) !== -1).concat(tabelTersirat).filter((item, index, array) => array.indexOf(item) === index),
+    kolom: daftarKolom.filter(item => pertanyaan.indexOf(item) !== -1).concat(kolomTersirat).filter((item, index, array) => array.indexOf(item) === index),
     fungsi: fungsi.filter((item, index, array) => array.indexOf(item) === index),
     klausa: klausa.filter((item, index, array) => array.indexOf(item) === index),
     nilaiKondisi: ambilNilaiKondisiDariPertanyaan(pertanyaanAsli)
@@ -501,7 +534,7 @@ function ambilNilaiKondisiDariPertanyaan(teks) {
     hasil.push(normalisasiTeksSql(match[1]));
   }
 
-  const regexAngkaTanggal = /\b\d{4}-\d{2}-\d{2}\b|\b\d+\b/g;
+  const regexAngkaTanggal = /\b\d{4}-\d{2}-\d{2}\b|\b\d+\b|\bktg\d+\b|\bd\d+\b/gi;
   while ((match = regexAngkaTanggal.exec(sumber)) !== null) {
     hasil.push(normalisasiTeksSql(match[0]));
   }
