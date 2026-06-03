@@ -742,26 +742,42 @@ function simpanKeSpreadsheet(nis, nama, tema, skorAkhir, detail, metadataUjian) 
 
 function sinkronkanRekapDariNilai(ss, nisTarget) {
   const sheetNilai = ss.getSheetByName("Nilai_Ujian_SQL");
-  const sheetRekap = ss.getSheetByName("REKAP");
+  let sheetRekap = ss.getSheetByName("REKAP");
 
-  if (!sheetNilai || !sheetRekap) {
-    Logger.log("Sinkron REKAP dilewati: sheet Nilai_Ujian_SQL atau REKAP tidak ditemukan.");
+  if (!sheetNilai) {
+    Logger.log("Sinkron REKAP dilewati: sheet Nilai_Ujian_SQL tidak ditemukan.");
     return;
   }
 
-  const dataNilai = sheetNilai.getDataRange().getValues();
-  const dataRekap = sheetRekap.getDataRange().getValues();
+  if (!sheetRekap) {
+    sheetRekap = ss.insertSheet("REKAP");
+  }
 
-  if (dataNilai.length < 2 || dataRekap.length < 2) return;
+  const dataNilai = sheetNilai.getDataRange().getValues();
+  if (dataNilai.length < 2) return;
+
+  let dataRekap = sheetRekap.getDataRange().getValues();
+  if (dataRekap.length === 0 || dataRekap[0].filter(Boolean).length === 0) {
+    sheetRekap.getRange(1, 1, 1, 6).setValues([["NIS", "Nama Siswa", "Paket Soal", "Skor Akhir", "Timestamp", "Status Gemini"]]);
+    dataRekap = sheetRekap.getDataRange().getValues();
+  }
 
   const headerNilai = dataNilai[0].map(normalisasiHeader);
-  const headerRekap = dataRekap[0].map(normalisasiHeader);
+  let headerRekap = dataRekap[0].map(normalisasiHeader);
   const indeksNisNilai = cariIndeksHeader(headerNilai, ["nis", "nomor induk siswa", "no induk"]);
-  const indeksNisRekap = cariIndeksHeader(headerRekap, ["nis", "nomor induk siswa", "no induk"]);
+  let indeksNisRekap = cariIndeksHeader(headerRekap, ["nis", "nomor induk siswa", "no induk"]);
 
-  if (indeksNisNilai === -1 || indeksNisRekap === -1) {
-    Logger.log("Sinkron REKAP dilewati: kolom NIS tidak ditemukan.");
+  if (indeksNisNilai === -1) {
+    Logger.log("Sinkron REKAP dilewati: kolom NIS tidak ditemukan di Nilai_Ujian_SQL.");
     return;
+  }
+
+  if (indeksNisRekap === -1) {
+    const kolomBaru = headerRekap.length + 1;
+    sheetRekap.getRange(1, kolomBaru).setValue("NIS");
+    dataRekap = sheetRekap.getDataRange().getValues();
+    headerRekap = dataRekap[0].map(normalisasiHeader);
+    indeksNisRekap = cariIndeksHeader(headerRekap, ["nis", "nomor induk siswa", "no induk"]);
   }
 
   const sumberPerNis = {};
@@ -773,6 +789,7 @@ function sinkronkanRekapDariNilai(ss, nisTarget) {
 
   const nisFilter = normalisasiNis(nisTarget);
   let jumlahUpdate = 0;
+  let barisRekapTarget = -1;
 
   for (let baris = 1; baris < dataRekap.length; baris++) {
     const nisRekap = normalisasiNis(dataRekap[baris][indeksNisRekap]);
@@ -781,18 +798,36 @@ function sinkronkanRekapDariNilai(ss, nisTarget) {
     const barisSumber = sumberPerNis[nisRekap];
     if (!barisSumber) continue;
 
-    for (let kolom = 0; kolom < headerRekap.length; kolom++) {
-      if (kolom === indeksNisRekap || !isSelKosong(dataRekap[baris][kolom])) continue;
-
-      const indeksSumber = cariKolomSumberUntukRekap(headerRekap[kolom], headerNilai);
-      if (indeksSumber === -1 || isSelKosong(barisSumber[indeksSumber])) continue;
-
-      sheetRekap.getRange(baris + 1, kolom + 1).setValue(barisSumber[indeksSumber]);
-      jumlahUpdate++;
-    }
+    barisRekapTarget = baris;
+    jumlahUpdate += tulisBarisRekap(sheetRekap, baris + 1, dataRekap[baris], headerRekap, headerNilai, barisSumber, indeksNisRekap);
   }
 
-  Logger.log("Sinkron REKAP selesai. Sel terisi: " + jumlahUpdate);
+  if (nisFilter && sumberPerNis[nisFilter] && barisRekapTarget === -1) {
+    const barisBaru = sheetRekap.getLastRow() + 1;
+    const barisRekapBaru = new Array(headerRekap.length).fill("");
+    barisRekapBaru[indeksNisRekap] = nisFilter;
+    sheetRekap.getRange(barisBaru, 1, 1, headerRekap.length).setValues([barisRekapBaru]);
+    jumlahUpdate += tulisBarisRekap(sheetRekap, barisBaru, barisRekapBaru, headerRekap, headerNilai, sumberPerNis[nisFilter], indeksNisRekap);
+  }
+
+  Logger.log("Sinkron REKAP selesai. Sel terisi/diperbarui: " + jumlahUpdate);
+}
+
+function tulisBarisRekap(sheetRekap, nomorBarisSheet, dataBarisRekap, headerRekap, headerNilai, barisSumber, indeksNisRekap) {
+  let jumlahUpdate = 0;
+
+  for (let kolom = 0; kolom < headerRekap.length; kolom++) {
+    if (kolom === indeksNisRekap) continue;
+
+    const indeksSumber = cariKolomSumberUntukRekap(headerRekap[kolom], headerNilai);
+    if (indeksSumber === -1 || isSelKosong(barisSumber[indeksSumber])) continue;
+
+    if (dataBarisRekap[kolom] === barisSumber[indeksSumber]) continue;
+    sheetRekap.getRange(nomorBarisSheet, kolom + 1).setValue(barisSumber[indeksSumber]);
+    jumlahUpdate++;
+  }
+
+  return jumlahUpdate;
 }
 
 function sinkronkanSemuaRekap() {
