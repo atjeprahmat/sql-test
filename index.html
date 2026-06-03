@@ -655,7 +655,7 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
     // =========================================================================
     // CONFIG URL SERVER GAS & LINK CLOUD STORAGE GOOGLE DRIVE
     // =========================================================================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwHaPUpdtaw_LAg-xCUH82GPMs0IESTmqUKWlbVdFOA81ZxdihL_BTrq7XN2L5pAr_q/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1CDlGJH1GhJRVb1Fvlx1ykaP9dKj2lxr_tVnZiMDv82tsFHaMkV7UE2RmeT0XPUb6/exec";
     const ENDPOINT_TIMEOUT_MS = 12000;
 
     // 🔴 WAJIB: Ganti ID di bawah ini dengan ID file as   dari dalam folder Google Drive Anda!
@@ -798,11 +798,14 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
             const result = await panggilBackend({ action: "checkGeminiStatus" });
             if (result.status === "success" && result.data) {
                 aturStatusGeminiHeader(result.data.statusGemini, result.data.pesanGemini);
+                return result.data.statusGemini;
             } else {
                 aturStatusGeminiHeader("fallback_lokal", result.message || "Status Gemini tidak tersedia.");
+                return "fallback_lokal";
             }
         } catch (error) {
             aturStatusGeminiHeader("frontend_fallback", "Backend Google Apps Script tidak dapat dihubungi: " + error.toString());
+            return "frontend_fallback";
         }
     }
 
@@ -938,6 +941,8 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
         }
 
         try {
+            cekStatusGeminiAwal();
+
             await requestLayarPenuh();
 
             if (!isLayarPenuhAktif()) {
