@@ -1199,6 +1199,15 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
                 result.data.pesanSpreadsheet = "Endpoint Google Apps Script tidak dapat dihubungi, sehingga hasil belum tersimpan ke Spreadsheet.";
             }
 
+            if (result.status !== "success" && /gemini|fallback/i.test(String(result.message || ""))) {
+                console.warn("Backend mengembalikan error Gemini. Evaluasi lokal dipakai dan data tidak masuk Spreadsheet.", result.message);
+                result = evaluasiJawabanLokal(payload);
+                result.data.statusSpreadsheet = "gagal";
+                result.data.pesanSpreadsheet = "Gemini di backend belum aktif, sehingga hasil belum tersimpan ke Spreadsheet.";
+                result.data.statusGemini = "frontend_fallback";
+                result.data.pesanGemini = "Gemini backend belum aktif. Evaluasi lokal dipakai sementara.";
+            }
+
             if (result.status === "success") {
                 isSubmittingExam = false;
                 if (document.exitFullscreen) { document.exitFullscreen(); }
