@@ -2,6 +2,7 @@
 // CONFIGURASI UTAMA (UBAH SESUAI KREDENSIAL ANDA)
 // =========================================================================
 const GEMINI_API_KEY = "AQ.Ab8RN6JhyvscSRg2F-IplmJjF9cENr2xYQWs_pjGmXNu0Y5_WQ";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const SPREADSHEET_ID = "1oNElVPAgXM7JGxJqQnWnjkTuyUJJ8DNh1LUOe_diyrc";
 
 // =========================================================================
@@ -183,6 +184,8 @@ function analisisSemuaJawabanBatch(dataSiswa) {
     tema: tema,
     skorAkhir: skorAkhir,
     detail: rincianEvaluasi,
+    statusGemini: metadataUjian.statusGemini,
+    pesanGemini: metadataUjian.pesanGemini,
     statusSpreadsheet: "tersimpan"
   };
 }
@@ -203,7 +206,7 @@ function panggilGeminiAIBatch(dataPaketUjian) {
     };
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + GEMINI_API_KEY;
   
   const promptSystem = `Anda adalah dosen dan mesin koreksi query database SQL otomatis yang sangat objektif dan teliti.
 Tugas Anda adalah mengevaluasi satu paket array data jawaban ujian SQL siswa berikut:
@@ -211,18 +214,19 @@ ${JSON.stringify(dataPaketUjian, null, 2)}
 
 Aturan Penilaian per nomor soal:
 1. Jika parameter jawabanSiswa kosong (""), wajib berikan skor: 0 dan catatan: "Siswa tidak mengisi jawaban".
-2. Jika jawaban salah total, salah logika dasar, atau bukan sintaks SQL, beri rentang skor 0-39.
-3. Jika logika SELECT sudah mengarah ke arah yang benar namun salah dalam penulisan nama tabel/kolom atau relasi klausa JOIN, beri rentang skor 40-69.
-4. Jika query benar secara logika tapi terdapat typo minor (saltik) huruf atau penggunaan spasi, beri skor 70-90.
-5. Jika query SQL benar, efisien, dan akurat sesuai instruksi pertanyaan, beri skor sempurna 100.
-6. Wajib cocokkan jawaban dengan rubrikWajib pada setiap soal. rubrikWajib berisi operasi, tabel, kolom, fungsi agregasi, nilai kondisi, dan klausa yang harus muncul.
-7. Jika tabel utama yang diminta tidak ada atau diganti tabel lain, skor maksimal 25 walaupun sintaks SQL benar.
-8. Jika operasi utama salah (misalnya diminta UPDATE tetapi jawaban SELECT, atau diminta INSERT tetapi jawaban UPDATE), skor maksimal 25.
-9. Jika soal meminta JOIN tetapi jawaban tidak memakai JOIN dan ON, skor maksimal 45.
-10. Jika soal meminta GROUP BY tetapi jawaban tidak memakai GROUP BY, skor maksimal 55.
-11. Jika fungsi agregasi wajib seperti SUM, MAX, AVG, atau COUNT tidak dipakai, skor maksimal 50.
-12. Jika kondisi penting seperti kode, gender, tanggal, angka batas, atau nilai teks yang diminta tidak ada, skor maksimal 60.
-13. Jangan memberi skor tinggi hanya karena jawaban mengandung SELECT dan FROM. Jawaban harus menjawab target soal secara spesifik.
+2. Jika jawaban terlalu pendek, kurang dari 10 karakter, hanya angka/huruf acak, atau bukan sintaks SQL, wajib berikan skor: 0.
+3. Jika jawaban salah total atau salah logika dasar, beri rentang skor 0-39.
+4. Jika logika SELECT sudah mengarah ke arah yang benar namun salah dalam penulisan nama tabel/kolom atau relasi klausa JOIN, beri rentang skor 40-69.
+5. Jika query benar secara logika tapi terdapat typo minor (saltik) huruf atau penggunaan spasi, beri skor 70-90.
+6. Jika query SQL benar, efisien, dan akurat sesuai instruksi pertanyaan, beri skor sempurna 100.
+7. Wajib cocokkan jawaban dengan rubrikWajib pada setiap soal. rubrikWajib berisi operasi, tabel, kolom, fungsi agregasi, nilai kondisi, dan klausa yang harus muncul.
+8. Jika tabel utama yang diminta tidak ada atau diganti tabel lain, skor maksimal 25 walaupun sintaks SQL benar.
+9. Jika operasi utama salah (misalnya diminta UPDATE tetapi jawaban SELECT, atau diminta INSERT tetapi jawaban UPDATE), skor maksimal 25.
+10. Jika soal meminta JOIN tetapi jawaban tidak memakai JOIN dan ON, skor maksimal 45.
+11. Jika soal meminta GROUP BY tetapi jawaban tidak memakai GROUP BY, skor maksimal 55.
+12. Jika fungsi agregasi wajib seperti SUM, MAX, AVG, atau COUNT tidak dipakai, skor maksimal 50.
+13. Jika kondisi penting seperti kode, gender, tanggal, angka batas, atau nilai teks yang diminta tidak ada, skor maksimal 60.
+14. Jangan memberi skor tinggi hanya karena jawaban mengandung SELECT dan FROM. Jawaban harus menjawab target soal secara spesifik.
 
 Anda WAJIB memberikan analisis ulasan dalam Bahasa Indonesia dan mengembalikan output berupa array objek JSON murni (tanpa format pembungkus markdown backtick \`\`\`json) dengan struktur persis seperti contoh ini:
 [
@@ -244,8 +248,17 @@ Anda WAJIB memberikan analisis ulasan dalam Bahasa Indonesia dan mengembalikan o
   
   try {
     const response = UrlFetchApp.fetch(url, options);
+    const kodeHttp = response.getResponseCode();
     const resText = response.getContentText();
     const resJson = JSON.parse(resText);
+
+    if (resJson && resJson.error) {
+      return {
+        hasil: fallbackError,
+        status: "fallback_lokal",
+        pesan: "Gemini API error HTTP " + kodeHttp + ": " + (resJson.error.message || "Pesan error tidak tersedia.")
+      };
+    }
     
     // Validasi struktur JSON response dari Google API Studio sebelum diolah
     if (resJson && resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts && resJson.candidates[0].content.parts[0]) {
@@ -261,11 +274,14 @@ Anda WAJIB memberikan analisis ulasan dalam Bahasa Indonesia dan mengembalikan o
           aiResponseText = aiResponseText.replace(/^```json|```$/g, "").trim();
         }
         
-        return {
-          hasil: JSON.parse(aiResponseText),
-          status: "gemini_ok",
-          pesan: "Penilaian berhasil menggunakan Gemini."
-        };
+        const hasilGemini = JSON.parse(aiResponseText);
+        if (Array.isArray(hasilGemini)) {
+          return {
+            hasil: hasilGemini,
+            status: "gemini_ok",
+            pesan: "Penilaian berhasil menggunakan Gemini " + GEMINI_MODEL + "."
+          };
+        }
       }
     }
     return {
@@ -290,7 +306,7 @@ function buatEvaluasiLokal(dataPaketUjian, alasanFallback) {
     const rubrik = item.rubrikWajib || bangunRubrikSoal(item.pertanyaan);
     let skor = 0;
 
-    if (jawaban) {
+    if (jawaban && !jawabanSqlTidakLayak(jawaban)) {
       const operasiBenar = rubrik.operasi.length === 0 || rubrik.operasi.some(op => mengandungTokenSql(jawaban, op));
       const tabelCocok = hitungCocok(jawaban, rubrik.tabel);
       const kolomCocok = hitungCocok(jawaban, rubrik.kolom);
@@ -316,13 +332,23 @@ function buatEvaluasiLokal(dataPaketUjian, alasanFallback) {
     return {
       nomorSoal: item.nomorSoal,
       skor: skor,
-      catatan: alasanFallback + " Skor sementara dihitung dari kecocokan operasi, tabel, kolom, fungsi, klausa, dan kondisi soal."
+      catatan: skor === 0 && jawaban
+        ? alasanFallback + " Jawaban terlalu pendek atau bukan sintaks SQL, sehingga skor sementara dibuat 0."
+        : alasanFallback + " Skor sementara dihitung dari kecocokan operasi, tabel, kolom, fungsi, klausa, dan kondisi soal."
     };
   });
 }
 
 function normalisasiTeksSql(teks) {
   return String(teks || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function jawabanSqlTidakLayak(jawaban) {
+  const teks = normalisasiTeksSql(jawaban);
+  if (teks.length < 10) return true;
+
+  const operasiSql = ["select", "insert", "update", "delete", "with", "create", "alter", "drop"];
+  return !operasiSql.some(op => mengandungTokenSql(teks, op));
 }
 
 function bangunRubrikSoal(pertanyaanAsli) {
@@ -397,6 +423,10 @@ function validasiSkorKetat(item, skorAwal, catatanAwal) {
 
   if (!jawaban) {
     return { skor: 0, catatan: "Siswa tidak mengisi jawaban." };
+  }
+
+  if (jawabanSqlTidakLayak(jawaban)) {
+    return { skor: 0, catatan: "Jawaban terlalu pendek atau bukan sintaks SQL." };
   }
 
   if (!rubrik.operasi.some(op => mengandungTokenSql(jawaban, op))) {

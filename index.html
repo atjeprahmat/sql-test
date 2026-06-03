@@ -754,13 +754,19 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
         return (teks || "").toLowerCase().replace(/\s+/g, " ").trim();
     }
 
+    function jawabanSqlTidakLayak(sql) {
+        const teks = normalisasiSql(sql);
+        if (teks.length < 10) return true;
+        return !/\b(select|insert|update|delete|with|create|alter|drop)\b/i.test(teks);
+    }
+
     function evaluasiJawabanLokal({ tema, nis, nama, jawaban }) {
         const soal = BANK_SOAL_LOKAL[tema] || [];
         const detail = soal.map((item, index) => {
             const sql = normalisasiSql(jawaban[index]);
             const totalKunci = item.expected.length;
-            const cocok = item.expected.filter(kunci => sql.includes(kunci)).length;
-            const skor = sql ? Math.round((cocok / totalKunci) * 100) : 0;
+            const cocok = jawabanSqlTidakLayak(sql) ? 0 : item.expected.filter(kunci => sql.includes(kunci)).length;
+            const skor = jawabanSqlTidakLayak(sql) ? 0 : Math.round((cocok / totalKunci) * 100);
 
             return {
                 nomorSoal: index + 1,
@@ -768,7 +774,9 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
                 pertanyaan: item.tanya,
                 jawabanSiswa: jawaban[index],
                 skor,
-                catatan: skor >= 80
+                catatan: jawabanSqlTidakLayak(sql)
+                    ? "Jawaban terlalu pendek atau bukan sintaks SQL."
+                    : skor >= 80
                     ? "Struktur query sudah mendekati indikator utama soal."
                     : "Periksa kembali kata kunci SQL, nama tabel, klausa, dan relasi yang diminta."
             };
@@ -780,7 +788,15 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
 
         return {
             status: "success",
-            data: { skorAkhir, nama, nis, tema, detail }
+            data: {
+                skorAkhir,
+                nama,
+                nis,
+                tema,
+                detail,
+                statusGemini: "frontend_fallback",
+                pesanGemini: "Endpoint Google Apps Script tidak dapat dihubungi, sehingga Gemini tidak berjalan."
+            }
         };
     }
 
@@ -1136,7 +1152,10 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
         const infoSpreadsheet = dataEvaluasi.statusSpreadsheet === "gagal"
             ? " | Spreadsheet: belum tersimpan"
             : " | Spreadsheet: terkirim ke server";
-        document.getElementById("info-rekap-siswa").innerText = `Nama: ${dataEvaluasi.nama} | NIS: ${dataEvaluasi.nis} | Paket: ${dataEvaluasi.tema} | ${infoKeamanan}${infoSpreadsheet}`;
+        const statusGemini = dataEvaluasi.statusGemini === "gemini_ok"
+            ? "Gemini: aktif"
+            : `Gemini: fallback (${dataEvaluasi.pesanGemini || "status tidak tersedia"})`;
+        document.getElementById("info-rekap-siswa").innerText = `Nama: ${dataEvaluasi.nama} | NIS: ${dataEvaluasi.nis} | Paket: ${dataEvaluasi.tema} | ${infoKeamanan}${infoSpreadsheet} | ${statusGemini}`;
 
         let htmlReview = "";
         dataEvaluasi.detail.forEach(item => {
