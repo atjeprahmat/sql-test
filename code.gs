@@ -85,6 +85,11 @@ function doPost(e) {
       const hasilEvaluasi = analisisSemuaJawabanBatch(dataSiswa);
       return buatResponseJson({ status: "success", data: hasilEvaluasi });
     }
+
+    if (dataSiswa.action === "saveFallbackResult") {
+      const hasilFallback = simpanHasilFallbackFrontend(dataSiswa);
+      return buatResponseJson({ status: "success", data: hasilFallback });
+    }
     
     return buatResponseJson({ status: "error", message: "Aksi tidak dikenali" });
                          
@@ -188,6 +193,42 @@ function analisisSemuaJawabanBatch(dataSiswa) {
     tema: tema,
     skorAkhir: skorAkhir,
     detail: rincianEvaluasi,
+    statusGemini: metadataUjian.statusGemini,
+    pesanGemini: metadataUjian.pesanGemini,
+    statusSpreadsheet: "tersimpan"
+  };
+}
+
+function simpanHasilFallbackFrontend(dataSiswa) {
+  const nis = dataSiswa.nis || "";
+  const nama = dataSiswa.nama || "";
+  const tema = dataSiswa.tema || "";
+  const detail = Array.isArray(dataSiswa.detail) ? dataSiswa.detail : [];
+  const skorAkhir = Number(dataSiswa.skorAkhir) || 0;
+  const metadataUjian = {
+    modeBackend: "frontend_fallback",
+    waktuMulai: dataSiswa.waktuMulai || "",
+    waktuSelesai: dataSiswa.waktuSelesai || "",
+    durasiDetik: dataSiswa.durasiDetik || "",
+    pelanggaranFullscreen: dataSiswa.pelanggaranFullscreen || 0,
+    logKeamanan: Array.isArray(dataSiswa.logKeamanan) ? dataSiswa.logKeamanan : [],
+    userAgent: dataSiswa.userAgent || "",
+    statusGemini: dataSiswa.statusGemini || "frontend_fallback",
+    pesanGemini: dataSiswa.pesanGemini || "Hasil dinilai oleh fallback frontend karena Gemini/backend belum aktif."
+  };
+
+  if (!detail.length) {
+    throw new Error("Detail hasil fallback kosong, tidak ada data yang bisa disimpan.");
+  }
+
+  simpanKeSpreadsheet(nis, nama, tema, skorAkhir, detail, metadataUjian);
+
+  return {
+    nis: nis,
+    nama: nama,
+    tema: tema,
+    skorAkhir: skorAkhir,
+    detail: detail,
     statusGemini: metadataUjian.statusGemini,
     pesanGemini: metadataUjian.pesanGemini,
     statusSpreadsheet: "tersimpan"

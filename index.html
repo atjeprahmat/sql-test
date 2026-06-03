@@ -655,7 +655,7 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
     // =========================================================================
     // CONFIG URL SERVER GAS & LINK CLOUD STORAGE GOOGLE DRIVE
     // =========================================================================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1CDlGJH1GhJRVb1Fvlx1ykaP9dKj2lxr_tVnZiMDv82tsFHaMkV7UE2RmeT0XPUb6/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby7ShJwooi6j5R3a29bT_qwc1oNzX9u4XR-Qgn1MFCTdR85q94L570IJ9NVNgu83q1i/exec";
     const ENDPOINT_TIMEOUT_MS = 12000;
 
     // 🔴 WAJIB: Ganti ID di bawah ini dengan ID file as   dari dalam folder Google Drive Anda!
@@ -871,6 +871,32 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
                 pesanGemini: "Endpoint Google Apps Script tidak dapat dihubungi, sehingga Gemini tidak berjalan."
             }
         };
+    }
+
+    async function simpanHasilFallbackKeSpreadsheet(payloadUjian, dataEvaluasi) {
+        const payloadSimpan = {
+            action: "saveFallbackResult",
+            nis: payloadUjian.nis,
+            nama: payloadUjian.nama,
+            tema: payloadUjian.tema,
+            skorAkhir: dataEvaluasi.skorAkhir,
+            detail: dataEvaluasi.detail,
+            waktuMulai: payloadUjian.waktuMulai,
+            waktuSelesai: payloadUjian.waktuSelesai,
+            durasiDetik: payloadUjian.durasiDetik,
+            pelanggaranFullscreen: payloadUjian.pelanggaranFullscreen,
+            logKeamanan: payloadUjian.logKeamanan,
+            userAgent: payloadUjian.userAgent,
+            statusGemini: dataEvaluasi.statusGemini || "frontend_fallback",
+            pesanGemini: dataEvaluasi.pesanGemini || "Hasil dinilai oleh fallback frontend karena Gemini/backend belum aktif."
+        };
+
+        const resultSimpan = await panggilBackend(payloadSimpan);
+        if (resultSimpan.status !== "success") {
+            throw new Error(resultSimpan.message || "Backend gagal menyimpan hasil fallback.");
+        }
+
+        return resultSimpan.data;
     }
 
     // FUNGSI NAVIGASI ALUR UTAMA
@@ -1202,10 +1228,15 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
             if (result.status !== "success" && /gemini|fallback/i.test(String(result.message || ""))) {
                 console.warn("Backend mengembalikan error Gemini. Evaluasi lokal dipakai dan data tidak masuk Spreadsheet.", result.message);
                 result = evaluasiJawabanLokal(payload);
-                result.data.statusSpreadsheet = "gagal";
-                result.data.pesanSpreadsheet = "Gemini di backend belum aktif, sehingga hasil belum tersimpan ke Spreadsheet.";
                 result.data.statusGemini = "frontend_fallback";
                 result.data.pesanGemini = "Gemini backend belum aktif. Evaluasi lokal dipakai sementara.";
+                try {
+                    result.data = await simpanHasilFallbackKeSpreadsheet(payload, result.data);
+                } catch (errorSimpanFallback) {
+                    console.warn("Hasil fallback sudah dihitung, tetapi gagal disimpan ke Spreadsheet.", errorSimpanFallback);
+                    result.data.statusSpreadsheet = "gagal";
+                    result.data.pesanSpreadsheet = "Gemini/backend belum aktif dan endpoint penyimpanan fallback belum dapat menyimpan hasil.";
+                }
             }
 
             if (result.status === "success") {
