@@ -1269,8 +1269,9 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
             : " | Spreadsheet: terkirim ke server";
         const statusGemini = dataEvaluasi.statusGemini === "gemini_ok"
             ? "Gemini: aktif"
-            : `Gemini: fallback (${dataEvaluasi.pesanGemini || "status tidak tersedia"})`;
+            : "Gemini: fallback";
         document.getElementById("info-rekap-siswa").innerText = `Nama: ${dataEvaluasi.nama} | NIS: ${dataEvaluasi.nis} | Paket: ${dataEvaluasi.tema} | ${infoKeamanan}${infoSpreadsheet} | ${statusGemini}`;
+        document.getElementById("info-rekap-siswa").title = dataEvaluasi.pesanGemini || "";
 
         let htmlReview = "";
         dataEvaluasi.detail.forEach(item => {
