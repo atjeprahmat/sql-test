@@ -91,6 +91,29 @@
             white-space: nowrap;
         }
 
+        .header-status-group {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .header-pill.status-ok {
+            background: #15803d;
+            color: #dcfce7;
+        }
+
+        .header-pill.status-warn {
+            background: #92400e;
+            color: #fef3c7;
+        }
+
+        .header-pill.status-checking {
+            background: #1e3a8a;
+            color: #dbeafe;
+        }
+
         .container {
             width: 100%;
             max-width: 1120px;
@@ -446,6 +469,10 @@
                 text-align: center;
             }
 
+            .header-status-group {
+                width: 100%;
+            }
+
             .container {
                 padding: 16px 12px 32px;
             }
@@ -486,7 +513,10 @@
                 <p>SQL Testing Engine - Basis Data XI PPLG</p>
             </div>
         </div>
-        <div class="header-pill">Mode Ujian Terproteksi</div>
+        <div class="header-status-group">
+            <div class="header-pill">Mode Ujian Terproteksi</div>
+            <div id="gemini-status-pill" class="header-pill status-checking">Gemini: mengecek...</div>
+        </div>
     </div>
 </header>
 
@@ -738,6 +768,44 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
         }
     }
 
+    function aturStatusGeminiHeader(status, pesan) {
+        const pill = document.getElementById("gemini-status-pill");
+        if (!pill) return;
+
+        pill.classList.remove("status-ok", "status-warn", "status-checking");
+        if (status === "gemini_ok") {
+            pill.classList.add("status-ok");
+            pill.innerText = "Gemini: aktif";
+            pill.title = pesan || "Penilaian AI siap digunakan.";
+            return;
+        }
+
+        if (status === "checking") {
+            pill.classList.add("status-checking");
+            pill.innerText = "Gemini: mengecek...";
+            pill.title = "Sedang memeriksa koneksi Gemini.";
+            return;
+        }
+
+        pill.classList.add("status-warn");
+        pill.innerText = "Gemini: fallback";
+        pill.title = pesan || "Gemini belum dapat dipastikan aktif.";
+    }
+
+    async function cekStatusGeminiAwal() {
+        aturStatusGeminiHeader("checking");
+        try {
+            const result = await panggilBackend({ action: "checkGeminiStatus" });
+            if (result.status === "success" && result.data) {
+                aturStatusGeminiHeader(result.data.statusGemini, result.data.pesanGemini);
+            } else {
+                aturStatusGeminiHeader("fallback_lokal", result.message || "Status Gemini tidak tersedia.");
+            }
+        } catch (error) {
+            aturStatusGeminiHeader("frontend_fallback", "Backend Google Apps Script tidak dapat dihubungi: " + error.toString());
+        }
+    }
+
     function ambilPaketSoalLokal() {
         const temaKeys = Object.keys(BANK_SOAL_LOKAL);
         const tema = temaKeys[Math.floor(Math.random() * temaKeys.length)];
@@ -749,6 +817,8 @@ INNER JOIN departments d ON de.dept_no = d.dept_no;</pre>
             }
         };
     }
+
+    cekStatusGeminiAwal();
 
     function normalisasiSql(teks) {
         return (teks || "").toLowerCase().replace(/\s+/g, " ").trim();

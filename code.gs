@@ -76,6 +76,10 @@ function doPost(e) {
       const paket = ambilPaketSoal();
       return buatResponseJson({ status: "success", data: paket });
     } 
+
+    if (dataSiswa.action === "checkGeminiStatus") {
+      return buatResponseJson({ status: "success", data: cekStatusGemini() });
+    }
     
     if (dataSiswa.action === "submitAnswers") {
       const hasilEvaluasi = analisisSemuaJawabanBatch(dataSiswa);
@@ -296,6 +300,59 @@ Anda WAJIB memberikan analisis ulasan dalam Bahasa Indonesia dan mengembalikan o
       hasil: fallbackError,
       status: "fallback_lokal",
       pesan: e.toString()
+    };
+  }
+}
+
+function cekStatusGemini() {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("MASUKKAN_API_KEY")) {
+    return {
+      statusGemini: "fallback_lokal",
+      pesanGemini: "API Key Gemini belum dikonfigurasi."
+    };
+  }
+
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + GEMINI_API_KEY;
+  const payload = {
+    contents: [{ parts: [{ text: "Balas dengan JSON murni: {\"status\":\"ok\"}" }] }],
+    generationConfig: { responseMimeType: "application/json" }
+  };
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const kodeHttp = response.getResponseCode();
+    const resText = response.getContentText();
+    const resJson = JSON.parse(resText);
+
+    if (resJson && resJson.error) {
+      return {
+        statusGemini: "fallback_lokal",
+        pesanGemini: "Gemini API error HTTP " + kodeHttp + ": " + (resJson.error.message || "Pesan error tidak tersedia.")
+      };
+    }
+
+    if (resJson && resJson.candidates && resJson.candidates[0]) {
+      return {
+        statusGemini: "gemini_ok",
+        pesanGemini: "Gemini " + GEMINI_MODEL + " aktif dan siap menilai."
+      };
+    }
+
+    return {
+      statusGemini: "fallback_lokal",
+      pesanGemini: "Struktur respons Gemini tidak sesuai."
+    };
+  } catch (e) {
+    Logger.log("Error Cek Status Gemini: " + e.toString());
+    return {
+      statusGemini: "fallback_lokal",
+      pesanGemini: e.toString()
     };
   }
 }
