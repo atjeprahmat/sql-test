@@ -24,11 +24,11 @@ const DAFTAR_PAKET_SOAL = {
     { "tipe": "Mudah", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan nilai pembelian terbesar dari kolom jumlah_pembelian pada tabel tr_penjualan menggunakan fungsi MAX." },
     { "tipe": "Mudah", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tuliskan perintah SQL untuk mengubah nama_kategori menjadi 'Peralatan Rumah Tangga' pada tabel ms_kategori dengan kode_kategori = 'KTG02'." },
     { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan nama_produk beserta nama_kategori-nya dengan menggabungkan tabel ms_produk and ms_kategori menggunakan klausa INNER JOIN yang tepat." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan nama_cabang and total jumlah baris transaksi (COUNT) untuk masing-masing cabang. Hubungkan tabel ms_cabang dengan tr_penjualan, lalu kelompokkan berdasarkan nama_cabang." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan nama_produk and total jumlah_pembelian untuk setiap produk. Hubungkan tabel ms_produk dengan tr_penjualan, lalu kelompokkan berdasarkan nama_produk." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan nama_kategori and rata-rata harga produk untuk setiap kategori menggunakan INNER JOIN dan AVG." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan kode_cabang, nama_cabang, and total transaksi untuk cabang yang memiliki lebih dari 5 transaksi. Gunakan GROUP BY dan HAVING." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan nama_produk yang pernah muncul di tabel tr_penjualan beserta jumlah total pembeliannya, urutkan dari total terbesar ke terkecil." }
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan cabang beserta nama kotanya menggunakan fungsi inner join" },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan produk beserta nama kategorinya menggunakan fungsi inner join" },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tampilkan transaksi beserta nama produk menggunakan fungsi inner join." },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Hapus kategori yang kodenya KTG9999" },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_MINIMART, "tanya": "Tambahkan data produk baru" }
   ],
   
   "Employees_Corporate": [
@@ -40,12 +40,12 @@ const DAFTAR_PAKET_SOAL = {
     { "tipe": "Mudah", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan rata-rata gaji dari tabel salaries menggunakan fungsi AVG pada kolom salary." },
     { "tipe": "Mudah", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tuliskan perintah SQL untuk menambahkan satu data departemen baru ke tabel departments dengan dept_no = 'd999' and dept_name = 'Innovation'." },
     { "tipe": "Mudah", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan semua kolom dari tabel titles yang memiliki title = 'Senior Engineer'." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan emp_no beserta rata-rata gaji (gunakan fungsi AVG pada kolom salary) mereka dari tabel salaries. Kelompokkan hasilnya berdasarkan emp_no." },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan emp_no, first_name dan last_name dan salary menggunakan inner join" },
     { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan nama depan (first_name), nama belakang (last_name), and jabatan (title) karyawan dengan menggabungkan tabel employees and titles berdasarkan kecocokan kolom emp_no." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan dept_name and jumlah karyawan pada setiap departemen dengan menggabungkan departments dan dept_emp, lalu kelompokkan berdasarkan dept_name." },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Update first_nama dan last_name dari employees yang emp_no=1 " },
     { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan first_name, last_name, and salary karyawan dengan menggabungkan employees dan salaries berdasarkan emp_no." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan title and jumlah karyawan untuk setiap jabatan pada tabel titles menggunakan GROUP BY." },
-    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tampilkan emp_no and rata-rata salary untuk karyawan yang rata-rata gajinya lebih dari 60000. Gunakan GROUP BY dan HAVING." }
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Hapus karyawan yang namanya 'Budi'" },
+    { "tipe": "Sedang", "gambar": URL_GAMBAR_EMPLOYEES, "tanya": "Tambahkan data karyawan baru" }
   ]
 };
 
