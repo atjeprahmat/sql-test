@@ -1,7 +1,7 @@
 // =========================================================================
 // CONFIGURASI UTAMA (UBAH SESUAI KREDENSIAL ANDA)
 // =========================================================================
-const GEMINI_API_KEY = "AQ.Ab8RN6JhyvscSRg2F-IplmJjF9cENr2xYQWs_pjGmXNu0Y5_WQ";
+const GEMINI_API_KEY = "AQ.Ab8RN6JcSjqAl6bdfMCxb2qSkYLXfYIRJ8yliZnr1Fonjc6acg";
 const GEMINI_MODEL = "gemini-2.5-flash";
 const SPREADSHEET_ID = "1oNElVPAgXM7JGxJqQnWnjkTuyUJJ8DNh1LUOe_diyrc";
 
